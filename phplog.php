@@ -1,20 +1,22 @@
 <?php
-// Change To Repo Directory
+// Muda para repositório
 chdir("/home/stancke/Desenvolvimento/twitter-data-mining");
-// Load Last 10 Git Logs
+// Carrega log
 $git_history = [];
 $git_logs = [];
-$begin = "1.6";
-$end = "1.7";
+#$tag = exec("git describe --tags `git rev-list --tags --max-count=1`");
+$tagFrom = "1.7";
+$tagTo = "1.8";
+$tag = $tagTo;
+$urlLink = "http://m.slcty.co:8080/redmine/issues/";
 
-exec("git log " . $begin . ".." . $end, $git_logs);
-// Parse Logs
+exec("git log " . $tagFrom . ".." . $tagTo, $git_logs);
+// Parseia o log
 $last_hash = null;
 foreach ($git_logs as $line)
 {
-	// Clean Line
+	// Limpa a linha
 	$line = trim($line);
-	// Proceed If There Are Any Lines
 	if (!empty($line))
 	{
 		// Commit
@@ -27,51 +29,87 @@ foreach ($git_logs as $line)
 		];
 		$last_hash = $hash;
 		}
-		// Author
+		// Autor
 		else if (strpos($line, 'Author') !== false) {
 			$author = explode(':', $line);
 			$author = trim(end($author));
 			$git_history[$last_hash]['author'] = $author;
 		}
-		// Date
+		// Data
 		else if (strpos($line, 'Date') !== false) {
 			$date = explode(':', $line, 2);
 			$date = trim(end($date));
 			$git_history[$last_hash]['date'] = date('d/m/Y H:i:s A', strtotime($date));
 		}
-		// Message
+		// Mensagem
 		else {
 			$git_history[$last_hash]['message'] .= $line ." ";
 		}
 	}
 }
 
-$cabecalho = "#Notas de Release - Versão" . $end . "#\n";
-$bugsCorrigidos = "**Bugs corrigidos:**\n";
+$existBugs = false;
+$existFunc = false;
+
+$cabecalho = "#Notas de Release - Versão" . $tag . "#\n";
+$bugsCorrigidos = "**Defeitos corrigidos:**\n";
 $novasFuncionalidades = "**Novas funcionalidades:**\n";
+$rodape = "\* *Este log foi gerado automaticamente a partir do repositório de código-fonte.*";
 
 foreach ($git_history as $line)
 {
 
+	//SUBSTITUI AS HASHTAGS POR LINKS
+	//preg_match("/#(\\w+)/", $line['message'], $matches);
+	//foreach($matches as $match)
+	//{
+		//print_r($match);
+		//$number = str_replace('#','',$match);
+		//$link = $urlLinks . "/issues/" . $number[0];
+		//$line['message'] = str_replace($match, '<a href="'.$link.'">'.$number[0].'</a>', $line['message']);
+	//}
+
+	$line['message'] = hashtag_links($line['message'], $urlLink);
+
 	if (strpos($line['message'],'[FIX]') !== false) {
 
 		$texto = str_replace("[FIX]", "", $line['message']);
-		$bugsCorrigidos .= "-" . $texto . "\n";   
+		$bugsCorrigidos .= "-" . $texto . "\n";
+		$existBugs = true;
 	}
-	if (strpos($line['message'],'[FEATURE]') !== false) {
+	if (strpos($line['message'],'[ENH]') !== false) {
 
-		$texto = str_replace("[FEATURE]", "", $line['message']);
+		$texto = str_replace("[ENH]", "", $line['message']);
 		$novasFuncionalidades .= "-" . $texto . "\n";   
+		$existFunc = true;
 	}
+
+
+
 }
 
 
 $saida = $cabecalho . "\n";
-$saida .= $novasFuncionalidades . "\n";
-$saida .= $bugsCorrigidos;
+if($existFunc)
+	$saida .= $novasFuncionalidades . "\n";
+if($existBugs)
+	$saida .= $bugsCorrigidos . "\n";
+$saida .= $rodape;
 
-chdir("/home/stancke/Desenvolvimento/gerador_de_release_notes");
+chdir(dirname(__FILE__));
 file_put_contents ("CHANGELOG.md",$saida);
+
+
+function hashtag_links($string, $urlLink) 
+{
+	preg_match_all('/#(\w+)/',$string,$matches);
+	foreach ($matches[1] as $match) 
+	{
+		$string = str_replace("#$match", "<a href='".$urlLink."$match' target='_blank'>#$match</a>", "$string");
+  	}
+
+	return $string;
+}
 
 
 ?>
