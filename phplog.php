@@ -1,4 +1,7 @@
 <?php
+
+exec("php /home/www/rotinas_jenkins/release-notes-generator/trata_versao.php $argv[3] /home/www/rotinas_jenkins/release-notes-generator $argv[2]");
+
 // Muda para repositório
 chdir($argv[2]);
 
@@ -7,6 +10,7 @@ chdir($argv[2]);
 $git_history = [];
 $git_logs = [];
 $tag = exec("git describe --tags `git rev-list --tags --max-count=1`");
+
 //$tagFrom = "1.7";
 //$tagTo = "1.8";
 //$tag = $tagTo;
@@ -53,7 +57,9 @@ foreach ($git_logs as $line)
 $existBugs = false;
 $existFunc = false;
 
-$cabecalho = "##Versão " . $tag ." (". date('d/m/Y') . ")".  "##\n";
+$tagNova = file_get_contents ("/home/www/rotinas_jenkins/release-notes-generator/versao_corrente");
+
+$cabecalho = "##Versão " . $tagNova ." (". date('d/m/Y') . ")".  "##\n";
 $bugsCorrigidos = "**Defeitos corrigidos:**\n";
 $novasFuncionalidades = "**Novas funcionalidades:**\n";
 $rodape = "\* *Este log foi gerado automaticamente a partir do repositório de código-fonte.*";
@@ -85,11 +91,7 @@ foreach ($git_history as $line)
 		$novasFuncionalidades .= "-" . $texto . "\n";   
 		$existFunc = true;
 	}
-
-
-
 }
-
 
 $saida = $cabecalho . "\n";
 if($existFunc)
