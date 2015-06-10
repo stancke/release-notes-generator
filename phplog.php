@@ -1,16 +1,18 @@
 <?php
 // Muda para repositório
-chdir("/home/stancke/Desenvolvimento/twitter-data-mining");
+chdir($argv[2]);
+
+//chdir("/home/stancke/Desenvolvimento/twitter-data-mining");
 // Carrega log
 $git_history = [];
 $git_logs = [];
-#$tag = exec("git describe --tags `git rev-list --tags --max-count=1`");
-$tagFrom = "1.7";
-$tagTo = "1.8";
-$tag = $tagTo;
+$tag = exec("git describe --tags `git rev-list --tags --max-count=1`");
+//$tagFrom = "1.7";
+//$tagTo = "1.8";
+//$tag = $tagTo;
 $urlLink = "http://m.slcty.co:8080/redmine/issues/";
 
-exec("git log " . $tagFrom . ".." . $tagTo, $git_logs);
+exec("git log " . $tag . "..", $git_logs);
 // Parseia o log
 $last_hash = null;
 foreach ($git_logs as $line)
@@ -51,7 +53,7 @@ foreach ($git_logs as $line)
 $existBugs = false;
 $existFunc = false;
 
-$cabecalho = "#Notas de Release - Versão" . $tag . "#\n";
+$cabecalho = "##Versão " . $tag ." (". date('d/m/Y') . ")".  "##\n";
 $bugsCorrigidos = "**Defeitos corrigidos:**\n";
 $novasFuncionalidades = "**Novas funcionalidades:**\n";
 $rodape = "\* *Este log foi gerado automaticamente a partir do repositório de código-fonte.*";
@@ -94,10 +96,12 @@ if($existFunc)
 	$saida .= $novasFuncionalidades . "\n";
 if($existBugs)
 	$saida .= $bugsCorrigidos . "\n";
-$saida .= $rodape;
+#$saida .= $rodape;
 
-chdir(dirname(__FILE__));
-file_put_contents ("CHANGELOG.md",$saida);
+chdir($argv[1]);
+#file_put_contents ("CHANGELOG.md",$saida, FILE_APPEND);
+$fileContents = file_get_contents("CHANGELOG.md");
+file_put_contents("CHANGELOG.md", $saida . $fileContents);
 
 
 function hashtag_links($string, $urlLink) 
